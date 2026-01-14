@@ -1,5 +1,43 @@
-import type { GenerateRequest, GenerateResponse } from '../shared/contracts';
-import { anthropicGenerateText } from './anthropic';
+import type { GenerateRequest, GenerateResponse, Length } from '../shared/contracts';
+import { ApiError, isApiError } from './errors';
+import { generateText } from './llm';
+
+const MAX_OUTPUT_CHARS = 30_000;
+
+function maxTokensForLength(length: Length): number {
+  switch (length) {
+    case 'Short':
+      return 450;
+    case 'Standard':
+      return 900;
+    case 'Detailed':
+      return 1400;
+  }
+}
+
+function normalizeMarkdown(md: string): string {
+  return md.replaceAll('\r\n', '\n').trim();
+}
+
+function enforceOutputCaps(md: string): { markdown: string; warnings: string[] } {
+  const warnings: string[] = [];
+  const normalized = normalizeMarkdown(md);
+
+  if (!normalized) {
+    throw new ApiError({
+      status: 502,
+      code: 'empty_output',
+      message: 'generation failed'
+    });
+  }
+
+  if (normalized.length <= MAX_OUTPUT_CHARS) {
+    return { markdown: normalized, warnings };
+  }
+
+  warnings.push(`output truncated to ${MAX_OUTPUT_CHARS} characters`);
+  return { markdown: normalized.slice(0, MAX_OUTPUT_CHARS).trimEnd(), warnings };
+}
 
 function stubMarkdown({ rawInput, settings }: GenerateRequest): string {
   const trimmed = rawInput.trim();
@@ -113,25 +151,40 @@ function buildUserPrompt(req: GenerateRequest): string {
 }
 
 export async function generateUpdate(req: GenerateRequest): Promise<GenerateResponse> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  const model = process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-20241022';
+  const maxTokens = maxTokensForLength(req.settings.length);
+  const system = buildSystemPrompt();
+  const user = buildUserPrompt(req);
 
-  if (!apiKey) {
+  try {
+    const result = await generateText({
+      system,
+      user,
+      maxTokens,
+      temperature: 0.2,
+      timeoutMs: 25_000
+    });
+
+    const capped = enforceOutputCaps(result.text);
     return {
-      markdown: stubMarkdown(req),
-      warnings: ['stub mode: set ANTHROPIC_API_KEY to enable live generation']
+      markdown: capped.markdown,
+      warnings: capped.warnings.length ? capped.warnings : undefined,
+      meta: result.meta
     };
+  } catch (err) {
+    if (isApiError(err) && err.code === 'provider_misconfigured') {
+      const capped = enforceOutputCaps(stubMarkdown(req));
+      const warnings = [
+        'stub mode: set ANTHROPIC_API_KEY to enable live generation',
+        ...capped.warnings
+      ];
+
+      return {
+        markdown: capped.markdown,
+        warnings: warnings.length ? warnings : undefined,
+        meta: { provider: 'stub', durationMs: 0 }
+      };
+    }
+
+    throw err;
   }
-
-  const markdown = await anthropicGenerateText({
-    apiKey,
-    model,
-    system: buildSystemPrompt(),
-    user: buildUserPrompt(req),
-    maxTokens: 900,
-    temperature: 0.2,
-    timeoutMs: 25_000
-  });
-
-  return { markdown };
 }

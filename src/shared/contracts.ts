@@ -35,6 +35,13 @@ export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
 
 export const GenerateResponseSchema = z.object({
   markdown: z.string(),
-  warnings: z.array(z.string()).optional()
+  warnings: z.array(z.string()).optional(),
+  meta: z
+    .object({
+      provider: z.string(),
+      model: z.string().optional(),
+      durationMs: z.number().int().nonnegative()
+    })
+    .optional()
 });
 export type GenerateResponse = z.infer<typeof GenerateResponseSchema>;

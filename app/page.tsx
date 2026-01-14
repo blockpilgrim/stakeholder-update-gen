@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AudienceSchema,
   GenerateResponseSchema,
@@ -13,6 +13,7 @@ import { copyToClipboard, downloadMarkdown } from '../src/client/export';
 const AUDIENCE_OPTIONS = AudienceSchema.options;
 const LENGTH_OPTIONS = LengthSchema.options;
 const TONE_OPTIONS = ToneSchema.options;
+const MAX_RAW_INPUT_CHARS = 20000;
 
 export default function HomePage() {
   const [rawInput, setRawInput] = useState('');
@@ -25,17 +26,44 @@ export default function HomePage() {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const afterRef = useRef<HTMLTextAreaElement | null>(null);
 
   const canExport = output.trim().length > 0;
+  const canGenerate = rawInput.trim().length >= 10;
   const filename = useMemo(() => {
     const safeAudience = settings.audience.toLowerCase().replaceAll(/[^a-z0-9-]+/g, '-');
     return `weekly-update-${safeAudience}.md`;
   }, [settings.audience]);
 
+  useEffect(() => {
+    if (!copied) return;
+    const id = window.setTimeout(() => setCopied(false), 1200);
+    return () => window.clearTimeout(id);
+  }, [copied]);
+
+  async function onCopy() {
+    if (!canExport) return;
+    setError(null);
+
+    try {
+      await copyToClipboard(output);
+      setCopied(true);
+    } catch {
+      setError('copy failed');
+    }
+  }
+
+  function onDownload() {
+    if (!canExport) return;
+    downloadMarkdown(filename, output);
+  }
+
   async function onGenerate() {
     setIsGenerating(true);
     setError(null);
     setWarnings([]);
+    setCopied(false);
 
     try {
       const res = await fetch('/api/generate', {
@@ -62,6 +90,8 @@ export default function HomePage() {
 
       setOutput(parsed.data.markdown);
       setWarnings(parsed.data.warnings ?? []);
+
+      requestAnimationFrame(() => afterRef.current?.focus());
     } catch {
       setError('request failed');
     } finally {
@@ -72,8 +102,12 @@ export default function HomePage() {
   return (
     <main className="container">
       <header className="header">
-        <h1 className="title">stakeholder update generator</h1>
-        <div className="controls">
+        <div className="titleRow">
+          <h1 className="title">stakeholder update generator</h1>
+          <div className="subtitle">weekly · paste notes → sendable update</div>
+        </div>
+
+        <div className="controls" aria-label="generation controls">
           <div className="control">
             <label htmlFor="audience">audience</label>
             <select
@@ -134,23 +168,12 @@ export default function HomePage() {
             </select>
           </div>
 
-          <button className="primaryBtn" onClick={onGenerate} disabled={isGenerating}>
+          <button
+            className="primaryBtn"
+            onClick={onGenerate}
+            disabled={isGenerating || !canGenerate}
+          >
             {isGenerating ? 'generating…' : 'generate'}
-          </button>
-
-          <button
-            className="secondaryBtn"
-            onClick={() => copyToClipboard(output)}
-            disabled={!canExport}
-          >
-            copy
-          </button>
-          <button
-            className="secondaryBtn"
-            onClick={() => downloadMarkdown(filename, output)}
-            disabled={!canExport}
-          >
-            download .md
           </button>
         </div>
 
@@ -161,29 +184,58 @@ export default function HomePage() {
         {error ? <div className="error">{error}</div> : null}
       </header>
 
-      <section className="grid">
+      <section className="workspace" aria-label="before and after">
         <div className="panel">
           <div className="panelHeader">
             <p className="panelTitle">before (raw notes)</p>
-            <span className="hint">{rawInput.length}/20000</span>
+            <span className="hint">{rawInput.length}/{MAX_RAW_INPUT_CHARS}</span>
           </div>
           <textarea
             className="textarea"
             value={rawInput}
             onChange={(e) => setRawInput(e.target.value)}
+            maxLength={MAX_RAW_INPUT_CHARS}
             placeholder={
               'paste raw notes here…\n\n- shipped: …\n- in progress: …\n- blockers: …\n- links: …'
             }
           />
         </div>
 
+        <div className="transform" aria-hidden="true">
+          <div className="transformLine" />
+          <div className="transformBadge">→</div>
+          <div className="transformLine" />
+        </div>
+
         <div className="panel">
           <div className="panelHeader">
-            <p className="panelTitle">after (editable markdown)</p>
-            <span className="hint">{output.length} chars</span>
+            <div className="panelHeaderLeft">
+              <p className="panelTitle">after (editable markdown)</p>
+              <span className="hint">{output.length} chars</span>
+            </div>
+
+            <div className="panelActions">
+              <button
+                className="secondaryBtn"
+                onClick={onCopy}
+                disabled={!canExport}
+                aria-label="copy generated draft"
+              >
+                {copied ? 'copied' : 'copy'}
+              </button>
+              <button
+                className="secondaryBtn"
+                onClick={onDownload}
+                disabled={!canExport}
+                aria-label="download generated draft as markdown"
+              >
+                download .md
+              </button>
+            </div>
           </div>
           <textarea
             className="textarea"
+            ref={afterRef}
             value={output}
             onChange={(e) => setOutput(e.target.value)}
             placeholder={'generated output will appear here…'}

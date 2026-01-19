@@ -24,10 +24,17 @@ export default function HomePage() {
   });
   const [output, setOutput] = useState('');
   const [warnings, setWarnings] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; code?: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const afterRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Track what was last generated (for detecting changes)
+  const [lastGeneratedSettings, setLastGeneratedSettings] = useState<UpdateSettings | null>(null);
+  const [lastGeneratedInput, setLastGeneratedInput] = useState<string | null>(null);
+
+  // Track if user manually edited output since last generation
+  const [outputDirty, setOutputDirty] = useState(false);
 
   const canExport = output.trim().length > 0;
   const canGenerate = rawInput.trim().length >= 10;
@@ -35,6 +42,24 @@ export default function HomePage() {
     const safeAudience = settings.audience.toLowerCase().replaceAll(/[^a-z0-9-]+/g, '-');
     return `weekly-update-${safeAudience}.md`;
   }, [settings.audience]);
+
+  // Derived: settings have changed since last generation
+  const settingsChanged = useMemo(() => {
+    if (!lastGeneratedSettings) return false;
+    return (
+      settings.audience !== lastGeneratedSettings.audience ||
+      settings.length !== lastGeneratedSettings.length ||
+      settings.tone !== lastGeneratedSettings.tone
+    );
+  }, [settings, lastGeneratedSettings]);
+
+  // Derived: should show "regenerate to apply" hint
+  const showRegenerateHint = output.length > 0 && settingsChanged;
+
+  // Derived: error is retryable (server errors, timeouts, network)
+  const isRetryableError =
+    error?.code &&
+    ['provider_timeout', 'provider_error', 'request_failed', 'network_error'].includes(error.code);
 
   useEffect(() => {
     if (!copied) return;
@@ -50,7 +75,7 @@ export default function HomePage() {
       await copyToClipboard(output);
       setCopied(true);
     } catch {
-      setError('copy failed');
+      setError({ message: 'copy failed', code: 'copy_error' });
     }
   }
 
@@ -60,6 +85,14 @@ export default function HomePage() {
   }
 
   async function onGenerate() {
+    // Confirmation before overwriting user edits
+    if (outputDirty && output.trim().length > 0) {
+      const confirmed = window.confirm(
+        'You have unsaved edits. Regenerating will replace them. Continue?'
+      );
+      if (!confirmed) return;
+    }
+
     setIsGenerating(true);
     setError(null);
     setWarnings([]);
@@ -78,22 +111,30 @@ export default function HomePage() {
           json && typeof json === 'object' && 'error' in json && typeof (json as any).error === 'string'
             ? (json as any).error
             : 'request failed';
-        setError(message);
+        const code =
+          json && typeof json === 'object' && 'code' in json && typeof (json as any).code === 'string'
+            ? (json as any).code
+            : 'request_failed';
+        setError({ message, code });
         return;
       }
 
       const parsed = GenerateResponseSchema.safeParse(json);
       if (!parsed.success) {
-        setError('invalid server response');
+        setError({ message: 'invalid server response', code: 'parse_error' });
         return;
       }
 
+      // Success - update all state
       setOutput(parsed.data.markdown);
       setWarnings(parsed.data.warnings ?? []);
+      setLastGeneratedSettings({ ...settings });
+      setLastGeneratedInput(rawInput);
+      setOutputDirty(false);
 
       requestAnimationFrame(() => afterRef.current?.focus());
     } catch {
-      setError('request failed');
+      setError({ message: 'request failed', code: 'network_error' });
     } finally {
       setIsGenerating(false);
     }
@@ -169,19 +210,37 @@ export default function HomePage() {
           </div>
 
           <button
-            className="primaryBtn"
+            className={`primaryBtn ${showRegenerateHint ? 'primaryBtnHighlight' : ''}`}
             onClick={onGenerate}
             disabled={isGenerating || !canGenerate}
           >
-            {isGenerating ? 'generating…' : 'generate'}
+            {isGenerating ? 'generating…' : showRegenerateHint ? 'regenerate' : 'generate'}
           </button>
         </div>
 
-        <div className="hint">privacy: nothing is saved by default. don’t paste secrets.</div>
-        {warnings.length > 0 ? (
+        <div className="hint">privacy: nothing is saved by default. do not paste secrets.</div>
+        {warnings.length > 0 && (
           <div className="hint">{warnings.join(' · ')}</div>
-        ) : null}
-        {error ? <div className="error">{error}</div> : null}
+        )}
+        {showRegenerateHint && (
+          <div className="hint regenerateHint">
+            settings changed - click regenerate to apply
+          </div>
+        )}
+        {error && (
+          <div className="errorContainer">
+            <span className="errorMessage">{error.message}</span>
+            {isRetryableError && (
+              <button
+                className="retryBtn"
+                onClick={onGenerate}
+                disabled={isGenerating}
+              >
+                retry
+              </button>
+            )}
+          </div>
+        )}
       </header>
 
       <section className="workspace" aria-label="before and after">
@@ -207,7 +266,7 @@ export default function HomePage() {
           <div className="transformLine" />
         </div>
 
-        <div className="panel">
+        <div className={`panel ${isGenerating ? 'panelGenerating' : ''}`}>
           <div className="panelHeader">
             <div className="panelHeaderLeft">
               <p className="panelTitle">after (editable markdown)</p>
@@ -234,11 +293,15 @@ export default function HomePage() {
             </div>
           </div>
           <textarea
-            className="textarea"
+            className={`textarea ${isGenerating ? 'textareaGenerating' : ''}`}
             ref={afterRef}
             value={output}
-            onChange={(e) => setOutput(e.target.value)}
-            placeholder={'generated output will appear here…'}
+            onChange={(e) => {
+              setOutput(e.target.value);
+              setOutputDirty(true);
+            }}
+            placeholder={isGenerating ? 'generating…' : 'generated output will appear here…'}
+            disabled={isGenerating}
           />
         </div>
       </section>

@@ -273,3 +273,100 @@ textarea {
   color: var(--danger);
   font-size: 12px;
 }
+
+/* Loading state for output panel */
+.panelGenerating {
+  position: relative;
+}
+
+.panelGenerating::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: 16px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.textareaGenerating {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+/* Regenerate hint */
+.regenerateHint {
+  color: var(--accent);
+  font-weight: 500;
+  padding: 4px 8px;
+  background: rgba(17, 17, 17, 0.05);
+  border-radius: 6px;
+  display: inline-block;
+}
+
+/* Button highlight when regenerate needed */
+.primaryBtnHighlight {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+@keyframes pulse-subtle {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(17, 17, 17, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(17, 17, 17, 0.1);
+  }
+}
+
+/* Error container with retry */
+.errorContainer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(176, 0, 32, 0.08);
+  border: 1px solid rgba(176, 0, 32, 0.2);
+  border-radius: 8px;
+}
+
+.errorMessage {
+  color: var(--danger);
+  font-size: 13px;
+  flex: 1;
+}
+
+.retryBtn {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--danger);
+  cursor: pointer;
+}
+
+.retryBtn:hover:not(:disabled) {
+  background: rgba(176, 0, 32, 0.08);
+}
+
+.retryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

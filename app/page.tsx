@@ -8,7 +8,7 @@ import {
   ToneSchema,
   type UpdateSettings
 } from '../src/shared/contracts';
-import { copyToClipboard, downloadMarkdown } from '../src/client/export';
+import { copyToClipboard, copyToClipboardAsSlack, downloadMarkdown } from '../src/client/export';
 
 const AUDIENCE_OPTIONS = AudienceSchema.options;
 const LENGTH_OPTIONS = LengthSchema.options;
@@ -26,7 +26,7 @@ export default function HomePage() {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState<{ message: string; code?: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copiedType, setCopiedType] = useState<'md' | 'slack' | null>(null);
   const afterRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Track what was last generated (for detecting changes)
@@ -62,10 +62,10 @@ export default function HomePage() {
     ['provider_timeout', 'provider_error', 'request_failed', 'network_error'].includes(error.code);
 
   useEffect(() => {
-    if (!copied) return;
-    const id = window.setTimeout(() => setCopied(false), 1200);
+    if (!copiedType) return;
+    const id = window.setTimeout(() => setCopiedType(null), 1200);
     return () => window.clearTimeout(id);
-  }, [copied]);
+  }, [copiedType]);
 
   async function onCopy() {
     if (!canExport) return;
@@ -73,7 +73,19 @@ export default function HomePage() {
 
     try {
       await copyToClipboard(output);
-      setCopied(true);
+      setCopiedType('md');
+    } catch {
+      setError({ message: 'copy failed', code: 'copy_error' });
+    }
+  }
+
+  async function onCopySlack() {
+    if (!canExport) return;
+    setError(null);
+
+    try {
+      await copyToClipboardAsSlack(output);
+      setCopiedType('slack');
     } catch {
       setError({ message: 'copy failed', code: 'copy_error' });
     }
@@ -96,7 +108,7 @@ export default function HomePage() {
     setIsGenerating(true);
     setError(null);
     setWarnings([]);
-    setCopied(false);
+    setCopiedType(null);
 
     try {
       const res = await fetch('/api/generate', {
@@ -280,7 +292,15 @@ export default function HomePage() {
                 disabled={!canExport}
                 aria-label="copy generated draft"
               >
-                {copied ? 'copied' : 'copy'}
+                {copiedType === 'md' ? 'copied' : 'copy'}
+              </button>
+              <button
+                className="secondaryBtn"
+                onClick={onCopySlack}
+                disabled={!canExport}
+                aria-label="copy generated draft formatted for Slack"
+              >
+                {copiedType === 'slack' ? 'copied' : 'copy for slack'}
               </button>
               <button
                 className="secondaryBtn"

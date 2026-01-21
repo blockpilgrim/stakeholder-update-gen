@@ -40,7 +40,13 @@ export const GenerateResponseSchema = z.object({
     .object({
       provider: z.string(),
       model: z.string().optional(),
-      durationMs: z.number().int().nonnegative()
+      durationMs: z.number().int().nonnegative(),
+      tokenUsage: z
+        .object({
+          inputTokens: z.number().int().nonnegative(),
+          outputTokens: z.number().int().nonnegative()
+        })
+        .optional()
     })
     .optional()
 });

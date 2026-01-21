@@ -15,6 +15,9 @@ export const config = {
   // Input/output caps
   maxInputChars: parseInt(process.env.MAX_INPUT_CHARS ?? '20000', 10),
   maxOutputChars: parseInt(process.env.MAX_OUTPUT_CHARS ?? '30000', 10),
+
+  // Telemetry: set TELEMETRY_ENABLED=false to disable all logging
+  telemetryEnabled: process.env.TELEMETRY_ENABLED !== 'false'
 } as const;
 
 export type Config = typeof config;

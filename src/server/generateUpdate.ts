@@ -8,9 +8,19 @@ import type {
 import { ApiError, isApiError } from './errors';
 import { generateText } from './llm';
 
+/**
+ * Internal response type that includes telemetry context.
+ * The _telemetry field is for internal use only and should be stripped before returning to clients.
+ */
+export type GenerateUpdateResult = GenerateResponse & {
+  _telemetry: {
+    metricsDetected: boolean;
+  };
+};
+
 const MAX_OUTPUT_CHARS = 30_000;
 
-function maxTokensForLength(length: Length): number {
+export function maxTokensForLength(length: Length): number {
   switch (length) {
     case 'Short':
       return 450;
@@ -412,7 +422,7 @@ function buildUserPrompt(
   ].join('\n');
 }
 
-export async function generateUpdate(req: GenerateRequest): Promise<GenerateResponse> {
+export async function generateUpdate(req: GenerateRequest): Promise<GenerateUpdateResult> {
   const metricsLikelyPresent = detectMetricsLikelyPresent(req.rawInput);
   const maxTokens = maxTokensForLength(req.settings.length);
   const system = buildSystemPrompt();
@@ -436,7 +446,8 @@ export async function generateUpdate(req: GenerateRequest): Promise<GenerateResp
     return {
       markdown: capped.markdown,
       warnings: warnings.length ? warnings : undefined,
-      meta: result.meta
+      meta: result.meta,
+      _telemetry: { metricsDetected: metricsLikelyPresent }
     };
   } catch (err) {
     if (isApiError(err) && err.code === 'provider_misconfigured') {
@@ -453,7 +464,8 @@ export async function generateUpdate(req: GenerateRequest): Promise<GenerateResp
       return {
         markdown: capped.markdown,
         warnings: warnings.length ? warnings : undefined,
-        meta: { provider: 'stub', durationMs: 0 }
+        meta: { provider: 'stub', durationMs: 0 },
+        _telemetry: { metricsDetected: metricsLikelyPresent }
       };
     }
 

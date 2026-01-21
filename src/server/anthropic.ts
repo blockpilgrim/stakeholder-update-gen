@@ -5,6 +5,18 @@ type AnthropicTextBlock = {
 
 type AnthropicMessageResponse = {
   content: AnthropicTextBlock[];
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+  };
+};
+
+export type AnthropicGenerateResult = {
+  text: string;
+  tokenUsage?: {
+    inputTokens: number;
+    outputTokens: number;
+  };
 };
 
 export async function anthropicGenerateText({
@@ -23,7 +35,7 @@ export async function anthropicGenerateText({
   maxTokens: number;
   temperature: number;
   timeoutMs: number;
-}): Promise<string> {
+}): Promise<AnthropicGenerateResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -58,7 +70,16 @@ export async function anthropicGenerateText({
       .trim();
 
     if (!text) throw new Error('anthropic response had no text content');
-    return text;
+
+    return {
+      text,
+      tokenUsage: data.usage
+        ? {
+            inputTokens: data.usage.input_tokens,
+            outputTokens: data.usage.output_tokens
+          }
+        : undefined
+    };
   } finally {
     clearTimeout(timeout);
   }

@@ -15,6 +15,10 @@ export type GenerateTextResult = {
     provider: string;
     model?: string;
     durationMs: number;
+    tokenUsage?: {
+      inputTokens: number;
+      outputTokens: number;
+    };
   };
 };
 
@@ -47,7 +51,7 @@ export async function generateText(input: GenerateTextInput): Promise<GenerateTe
   }
 
   try {
-    const text = await anthropicGenerateText({
+    const result = await anthropicGenerateText({
       apiKey,
       model,
       system: input.system,
@@ -58,11 +62,12 @@ export async function generateText(input: GenerateTextInput): Promise<GenerateTe
     });
 
     return {
-      text,
+      text: result.text,
       meta: {
         provider: 'anthropic',
         model,
-        durationMs: Date.now() - startedAt
+        durationMs: Date.now() - startedAt,
+        tokenUsage: result.tokenUsage
       }
     };
   } catch (err) {

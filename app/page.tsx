@@ -9,6 +9,7 @@ import {
   type UpdateSettings
 } from '../src/shared/contracts';
 import { copyToClipboard, copyToClipboardAsSlack, downloadMarkdown } from '../src/client/export';
+import { DEMO_INPUT } from '../src/shared/demoContent';
 
 const AUDIENCE_OPTIONS = AudienceSchema.options;
 const LENGTH_OPTIONS = LengthSchema.options;
@@ -56,10 +57,21 @@ export default function HomePage() {
   // Derived: should show "regenerate to apply" hint
   const showRegenerateHint = output.length > 0 && settingsChanged;
 
-  // Derived: error is retryable (server errors, timeouts, network)
+  // Derived: error is retryable (server errors, timeouts, network, rate limits)
   const isRetryableError =
     error?.code &&
-    ['provider_timeout', 'provider_error', 'request_failed', 'network_error'].includes(error.code);
+    ['provider_timeout', 'provider_error', 'request_failed', 'network_error', 'rate_limited'].includes(
+      error.code
+    );
+
+  // Derived: error suggests trying the demo instead
+  const showDemoSuggestion =
+    error?.code && ['daily_limit_reached', 'generation_disabled'].includes(error.code);
+
+  function onTryDemo() {
+    setRawInput(DEMO_INPUT);
+    setError(null);
+  }
 
   useEffect(() => {
     if (!copiedType) return;
@@ -230,7 +242,12 @@ export default function HomePage() {
           </button>
         </div>
 
-        <div className="hint">privacy: nothing is saved by default. do not paste secrets.</div>
+        <div className="hint">
+          privacy: nothing is saved by default. do not paste secrets.{' '}
+          <button className="linkBtn" onClick={onTryDemo}>
+            try demo
+          </button>
+        </div>
         {warnings.length > 0 && (
           <div className="hint">{warnings.join(' · ')}</div>
         )}
@@ -249,6 +266,11 @@ export default function HomePage() {
                 disabled={isGenerating}
               >
                 retry
+              </button>
+            )}
+            {showDemoSuggestion && (
+              <button className="retryBtn" onClick={onTryDemo}>
+                try demo
               </button>
             )}
           </div>

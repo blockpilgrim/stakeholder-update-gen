@@ -370,3 +370,19 @@ textarea {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Link-style button (inline with text) */
+.linkBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.linkBtn:hover {
+  text-decoration-thickness: 2px;
+}

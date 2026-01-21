@@ -168,13 +168,13 @@ export default function HomePage() {
     <main className="container">
       <header className="header">
         <div className="titleRow">
-          <h1 className="title">stakeholder update generator</h1>
-          <div className="subtitle">weekly · paste notes → sendable update</div>
+          <h1 className="title">Stakeholder Update Generator</h1>
+          <div className="subtitle">Raw notes to polished updates</div>
         </div>
 
         <div className="controls" aria-label="generation controls">
           <div className="control">
-            <label htmlFor="audience">audience</label>
+            <label htmlFor="audience">Audience</label>
             <select
               id="audience"
               value={settings.audience}
@@ -194,7 +194,7 @@ export default function HomePage() {
           </div>
 
           <div className="control">
-            <label htmlFor="length">length</label>
+            <label htmlFor="length">Length</label>
             <select
               id="length"
               value={settings.length}
@@ -214,7 +214,7 @@ export default function HomePage() {
           </div>
 
           <div className="control">
-            <label htmlFor="tone">tone</label>
+            <label htmlFor="tone">Tone</label>
             <select
               id="tone"
               value={settings.tone}
@@ -238,14 +238,14 @@ export default function HomePage() {
             onClick={onGenerate}
             disabled={isGenerating || !canGenerate}
           >
-            {isGenerating ? 'generating…' : showRegenerateHint ? 'regenerate' : 'generate'}
+            {isGenerating ? 'Generating...' : showRegenerateHint ? 'Regenerate' : 'Generate'}
           </button>
         </div>
 
         <div className="hint">
-          privacy: nothing is saved by default. do not paste secrets.{' '}
+          Nothing is saved. Avoid pasting secrets.{' '}
           <button className="linkBtn" onClick={onTryDemo}>
-            try demo
+            Try demo
           </button>
         </div>
         {warnings.length > 0 && (
@@ -253,7 +253,7 @@ export default function HomePage() {
         )}
         {showRegenerateHint && (
           <div className="hint regenerateHint">
-            settings changed - click regenerate to apply
+            Settings changed — regenerate to apply
           </div>
         )}
         {error && (
@@ -265,12 +265,12 @@ export default function HomePage() {
                 onClick={onGenerate}
                 disabled={isGenerating}
               >
-                retry
+                Retry
               </button>
             )}
             {showDemoSuggestion && (
               <button className="retryBtn" onClick={onTryDemo}>
-                try demo
+                Try demo
               </button>
             )}
           </div>
@@ -280,18 +280,21 @@ export default function HomePage() {
       <section className="workspace" aria-label="before and after">
         <div className="panel">
           <div className="panelHeader">
-            <p className="panelTitle">before (raw notes)</p>
-            <span className="hint">{rawInput.length}/{MAX_RAW_INPUT_CHARS}</span>
+            <p className="panelTitle">Before</p>
           </div>
           <textarea
             className="textarea"
             value={rawInput}
             onChange={(e) => setRawInput(e.target.value)}
             maxLength={MAX_RAW_INPUT_CHARS}
-            placeholder={
-              'paste raw notes here…\n\n- shipped: …\n- in progress: …\n- blockers: …\n- links: …'
-            }
+            placeholder="Paste your raw notes here...
+
+• What shipped this week?
+• What's in progress?
+• Any blockers or risks?
+• Key metrics or links?"
           />
+          <span className="charCount">{rawInput.length.toLocaleString()} / {MAX_RAW_INPUT_CHARS.toLocaleString()}</span>
         </div>
 
         <div className="transform" aria-hidden="true">
@@ -302,11 +305,7 @@ export default function HomePage() {
 
         <div className={`panel ${isGenerating ? 'panelGenerating' : ''}`}>
           <div className="panelHeader">
-            <div className="panelHeaderLeft">
-              <p className="panelTitle">after (editable markdown)</p>
-              <span className="hint">{output.length} chars</span>
-            </div>
-
+            <p className="panelTitle">After</p>
             <div className="panelActions">
               <button
                 className="secondaryBtn"
@@ -314,7 +313,7 @@ export default function HomePage() {
                 disabled={!canExport}
                 aria-label="copy generated draft"
               >
-                {copiedType === 'md' ? 'copied' : 'copy'}
+                {copiedType === 'md' ? 'Copied!' : 'Copy'}
               </button>
               <button
                 className="secondaryBtn"
@@ -322,7 +321,7 @@ export default function HomePage() {
                 disabled={!canExport}
                 aria-label="copy generated draft formatted for Slack"
               >
-                {copiedType === 'slack' ? 'copied' : 'copy for slack'}
+                {copiedType === 'slack' ? 'Copied!' : 'Copy for Slack'}
               </button>
               <button
                 className="secondaryBtn"
@@ -330,7 +329,7 @@ export default function HomePage() {
                 disabled={!canExport}
                 aria-label="download generated draft as markdown"
               >
-                download .md
+                Download .md
               </button>
             </div>
           </div>
@@ -342,9 +341,10 @@ export default function HomePage() {
               setOutput(e.target.value);
               setOutputDirty(true);
             }}
-            placeholder={isGenerating ? 'generating…' : 'generated output will appear here…'}
+            placeholder={isGenerating ? 'Generating your update...' : 'Your polished update will appear here...'}
             disabled={isGenerating}
           />
+          <span className="charCount">{output.length.toLocaleString()} chars</span>
         </div>
       </section>
     </main>

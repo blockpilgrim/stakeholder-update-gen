@@ -40,7 +40,7 @@ export async function generateText(input: GenerateTextInput): Promise<GenerateTe
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  const model = process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-20241022';
+  const model = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-5-20250929';
 
   if (!apiKey) {
     throw new ApiError({
@@ -79,6 +79,9 @@ export async function generateText(input: GenerateTextInput): Promise<GenerateTe
         cause: err
       });
     }
+
+    // Log the actual error for debugging
+    console.error('[llm] provider error:', err instanceof Error ? err.message : err);
 
     throw new ApiError({
       status: 502,

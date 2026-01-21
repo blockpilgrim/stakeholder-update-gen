@@ -46,7 +46,7 @@ The system uses audience-driven prompting with:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...  # Required for live generation
-ANTHROPIC_MODEL=claude-3-5-sonnet-20241022  # Optional
+ANTHROPIC_MODEL=claude-sonnet-4-5-20250929  # Optional (default)
 LLM_PROVIDER=anthropic  # Optional
 ```
 
@@ -56,9 +56,13 @@ When API key is missing, the app falls back to stub mode showing template struct
 
 Implementation tracked in Linear under **SUG-MVP** project. At session start, read `stakeholder-update-generator-concept-brief.md` for product context.
 
+## Working in Linear
+
+- When starting work on Linear issues, always check the issue status. If the issue is "In Progress", that may mean that work has already begun on it. In such cases, always read issue comments in addition to the main issue details. Comments may contain context from previous work sessions or other AI agents. If the issue status is "Backlog" or "Todo", and the user has asked you to work on it, then set the issue status to "In Progress". 
+- Any time you've conducted work on a Linear issue, add a comment to the issue documenting what you've done, implementation status (e.g. complete, unresolved bugs), along with any important context/notes worth mentioning which AI agents in future sessions may find helpful (for instance, in case there are related sub-issues or other dependencies).
+
 ## Git Conventions
 
 - All lowercase, simple and concise messages
 - Treat commits as guideposts, not detailed changelogs
 - Do not mention AI tools in commits
-- Branch naming: `leroidejesa/roi-{number}-{feature}`

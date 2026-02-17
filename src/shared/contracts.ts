@@ -16,13 +16,6 @@ export const UpdateSettingsSchema = z.object({
 });
 export type UpdateSettings = z.infer<typeof UpdateSettingsSchema>;
 
-export const UpdateDraftSchema = z.object({
-  rawInput: z.string(),
-  settings: UpdateSettingsSchema,
-  output: z.string()
-});
-export type UpdateDraft = z.infer<typeof UpdateDraftSchema>;
-
 export const GenerateRequestSchema = z.object({
   rawInput: z
     .string()

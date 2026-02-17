@@ -78,17 +78,6 @@ class InMemoryRateLimiter {
     };
   }
 
-  /**
-   * Get current usage stats (useful for monitoring/debugging).
-   */
-  getStats(): { ipBucketCount: number; globalCount: number; globalLimit: number } {
-    return {
-      ipBucketCount: this.ipBuckets.size,
-      globalCount: this.globalBucket.count,
-      globalLimit: config.rateLimitGlobalDaily,
-    };
-  }
-
   private getNextMidnight(): number {
     const now = new Date();
     const tomorrow = new Date(now);

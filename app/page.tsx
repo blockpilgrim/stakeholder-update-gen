@@ -32,7 +32,6 @@ export default function HomePage() {
 
   // Track what was last generated (for detecting changes)
   const [lastGeneratedSettings, setLastGeneratedSettings] = useState<UpdateSettings | null>(null);
-  const [lastGeneratedInput, setLastGeneratedInput] = useState<string | null>(null);
 
   // Track if user manually edited output since last generation
   const [outputDirty, setOutputDirty] = useState(false);
@@ -153,7 +152,6 @@ export default function HomePage() {
       setOutput(parsed.data.markdown);
       setWarnings(parsed.data.warnings ?? []);
       setLastGeneratedSettings({ ...settings });
-      setLastGeneratedInput(rawInput);
       setOutputDirty(false);
 
       requestAnimationFrame(() => afterRef.current?.focus());

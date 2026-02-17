@@ -3,7 +3,7 @@
  * Contains a realistic example input and pre-generated outputs for each audience type.
  */
 
-import type { Audience, UpdateSettings } from './contracts';
+import type { Audience } from './contracts';
 
 export const DEMO_INPUT = `Week of Jan 13-17
 
@@ -136,12 +136,3 @@ Shipped checkout v2.0 to prod. Payment retry in staging. Brief DB outage Wed han
 ## Incident note
 Wed 14:00-14:15 UTC: DB connection pool exhaustion caused 15min outage. RCA complete, alerting added.`
 };
-
-/**
- * Get demo output for the given settings.
- * Note: We only vary by audience for simplicity - length/tone variations
- * would require many more pre-generated outputs.
- */
-export function getDemoOutput(settings: UpdateSettings): string {
-  return DEMO_OUTPUTS[settings.audience];
-}

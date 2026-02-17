@@ -24,12 +24,8 @@ export type {
   RateLimitMetrics,
   ErrorCategory
 };
-export { generateRequestId };
 
-/**
- * Check if telemetry is enabled.
- */
-export function isTelemetryEnabled(): boolean {
+function isTelemetryEnabled(): boolean {
   return config.telemetryEnabled;
 }
 
@@ -80,13 +76,6 @@ export class TelemetryContext {
    */
   setValidationMetrics(metrics: ValidationMetrics): void {
     this.validationMetrics = metrics;
-  }
-
-  /**
-   * Record rate limit state.
-   */
-  setRateLimitMetrics(metrics: RateLimitMetrics): void {
-    this.rateLimitMetrics = metrics;
   }
 
   /**
